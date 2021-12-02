@@ -1,0 +1,5 @@
+<launch>
+    <group ns="aqua/proteus">
+        <node name="aqua_rcvm_server" pkg="proteus_rcvm_aqua" type="rcvm_aqua_server.py" respawn="true" output="screen"></node>
+    </group>
+</launch>

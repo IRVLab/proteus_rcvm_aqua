@@ -68,7 +68,7 @@ class RCVMPilotClient:
 
         self.dyn_reconf = dynamic_reconfigure.client.Client("/AP_depth_filter", timeout=5)  
         self.original_params = self.dyn_reconf.get_configuration(timeout=5) 
-        print 'Previous value of window_size_sec  was: ' + str(self.original_params['window_size_sec'])
+        print('Previous value of window_size_sec  was: ' + str(self.original_params['window_size_sec']))
 
         rospy.loginfo('Setting window_size_sec to ' + str(0.5)) 
         self.dyn_reconf.update_configuration({'window_size_sec':float(0.5)}) 
@@ -181,30 +181,30 @@ class RCVMPilotClient:
             rpy_from_imu_to_global = self.get_rpy_of_imu_in_global()
             rate.sleep()
 
-            print 'angle diff: ', (abs(self.angle_diff(rpy_from_imu_to_global[0], target_angles[0]))*180/pi, 
+            print('angle diff: ', (abs(self.angle_diff(rpy_from_imu_to_global[0], target_angles[0]))*180/pi, 
                                 abs(self.angle_diff(rpy_from_imu_to_global[1], target_angles[1]))*180/pi, 
-                                abs(self.angle_diff(rpy_from_imu_to_global[2], target_angles[2]))*180/pi)
+                                abs(self.angle_diff(rpy_from_imu_to_global[2], target_angles[2]))*180/pi))
             
     def do_relative_angle_change(self, delta_angles_deg, target_depth, vx, vz, time_sec=None, threshold=7, check_roll=True, check_pitch=True, check_yaw=True, timeout=None):
 
-        print 'da: ', delta_angles_deg
+        print('da: ', delta_angles_deg)
         rpy_from_imu_to_global = self.get_rpy_of_imu_in_global()
         
-        print 'rpy: ', (rpy_from_imu_to_global[0]*180/pi, rpy_from_imu_to_global[1]*180/pi, rpy_from_imu_to_global[2]*180/pi)
+        print('rpy: ', (rpy_from_imu_to_global[0]*180/pi, rpy_from_imu_to_global[1]*180/pi, rpy_from_imu_to_global[2]*180/pi))
         target_roll  = rpy_from_imu_to_global[0] + delta_angles_deg[0]*pi/180
         target_pitch = rpy_from_imu_to_global[1] + delta_angles_deg[1]*pi/180
         target_yaw   = rpy_from_imu_to_global[2] + delta_angles_deg[2]*pi/180
-        print 'Ta: ', (target_roll*180/pi, target_pitch*180/pi, target_yaw*180/pi)
+        print('Ta: ', (target_roll*180/pi, target_pitch*180/pi, target_yaw*180/pi))
         rotation_from_target_to_global = tf.transformations.quaternion_from_euler(target_roll, 
                                                                                   target_pitch, 
                                                                                   target_yaw)
 
         target_angles = tf.transformations.euler_from_quaternion(rotation_from_target_to_global)
-        print 'Trimmed ta: ', (target_angles[0]*180/pi, target_angles[1]*180/pi, target_angles[2]*180/pi)
+        print('Trimmed ta: ', (target_angles[0]*180/pi, target_angles[1]*180/pi, target_angles[2]*180/pi))
         
-        print 'angle diff: ', (abs(self.angle_diff(rpy_from_imu_to_global[0], target_angles[0]))*180/pi, 
+        print('angle diff: ', (abs(self.angle_diff(rpy_from_imu_to_global[0], target_angles[0]))*180/pi, 
                                abs(self.angle_diff(rpy_from_imu_to_global[1], target_angles[1]))*180/pi, 
-                               abs(self.angle_diff(rpy_from_imu_to_global[2], target_angles[2]))*180/pi)
+                               abs(self.angle_diff(rpy_from_imu_to_global[2], target_angles[2]))*180/pi))
         
         rate = rospy.Rate(10.0)
         if timeout != None:
@@ -231,9 +231,9 @@ class RCVMPilotClient:
           rpy_from_imu_to_global = self.get_rpy_of_imu_in_global()
           rate.sleep()
                 
-          print 'angle diff: ', (abs(self.angle_diff(rpy_from_imu_to_global[0], target_angles[0]))*180/pi, 
+          print('angle diff: ', (abs(self.angle_diff(rpy_from_imu_to_global[0], target_angles[0]))*180/pi, 
                                 abs(self.angle_diff(rpy_from_imu_to_global[1], target_angles[1]))*180/pi, 
-                                abs(self.angle_diff(rpy_from_imu_to_global[2], target_angles[2]))*180/pi)
+                                abs(self.angle_diff(rpy_from_imu_to_global[2], target_angles[2]))*180/pi))
             
     def do_relative_depth_change(self, dz, vx, vz):
 
