@@ -1,5 +1,7 @@
 <launch>
-    <group ns="aqua/proteus">
+    <group ns="aqua/proteus/">
+        <param name="rcvm/kineme_control_mode" type="string" value="relative" ></param>
+        <param name="rcvm/angle_diff_threshold" type="int" value="5" ></param>
         <node name="aqua_rcvm_server" pkg="proteus_rcvm_aqua" type="rcvm_aqua_server.py" respawn="true" output="screen"></node>
     </group>
 </launch>
