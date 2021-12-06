@@ -46,7 +46,7 @@ def service_cb(req, kineme):
 def execute_trigger(req, kineme):
     rospy.loginfo('Executing trigger kineme %s'%(kineme.id))
     for knode in kineme.knodes:
-        rpc.do_relative_angle_change((knode.orientation.roll, knode.orientation.pitch, knode.orientation.yaw), rpc.current_depth, knode.position.x, knode.position.y, knode.duration.seconds, threshold=rcvm_params['angle_diff_threshold'])
+        rpc.do_relative_angle_change((knode.orientation.roll, knode.orientation.pitch, knode.orientation.yaw), rpc.current_depth, knode.position.x, knode.position.y, knode.duration.seconds, threshold=rcvm_params['angle_diff_threshold'], timeout=knode.duration.seconds)
 
     return True
     
