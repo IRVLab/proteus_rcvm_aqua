@@ -17,7 +17,7 @@ import rosnode
 from timeout import Timeout
 
 import xml.etree.ElementTree as ET
-from proteus.kineme import Kineme, KNode
+from proteus.kineme import Kineme, KNode, KNodeAbsolute, KNodeDirectional
 from proteus.srv import SymbolTrigger, SymbolDirectional, SymbolTarget
 
 rospy.init_node('aqua_rcvm_server', argv=None, anonymous=True)
@@ -51,18 +51,29 @@ def execute_trigger(req, kineme):
     return True
     
 # Executes kinemes which are directional called, meaning that there's directional information in the service call.
-def execute_directional(req, id):
-    return False
+def execute_directional(req, kineme):
+    rospy.loginfo('Executing directional kineme %s'%(kineme.id))
+    transform = req.transform
+    pos = transform.translation
+    orr = euler_from_quaternion([transform.rotation.x, transform.rotation.y, transform.rotation.z, transform.rotation.w])
+
+    for knode in kineme.knodes:
+        if type(knode) == KNodeAbsolute:
+            rpc.do_relative_angle_change((knode.orientation.roll, knode.orientation.pitch, knode.orientation.yaw), rpc.current_depth, knode.position.x, knode.position.y, knode.duration.seconds, threshold=rcvm_params['angle_diff_threshold'], timeout=knode.duration.seconds)
+        elif type(knode) == KNodeDirectional:
+            rpc.goto_target_orientation((rpc.RAD2DEG(orr[0]), rpc.RAD2DEG(orr[1]), rpc.RAD2DEG(orr[2])), rpc.current_depth, 0, 0, threshold=rcvm_params['angle_diff_threshold'], timeout=knode.duration.seconds)
+            
+    return True
 
 # Executes kinemes which are target called, meaning that there is a need to connect the kineme to a target.
-def execute_target(req, id):
+def execute_target(req, kineme):
     return False
 
 
 if __name__ == '__main__':
     rospy.loginfo('Initializing the Aqua8 RCVM server')
 
-    rcvm_params = rospy.get_param('rcvm/', 'relative')
+    rcvm_params = rospy.get_param('rcvm/')
 
     #Check if PROTEUS language server is up
     rospy.loginfo('Checking PROTEUS language server...')
@@ -123,8 +134,10 @@ if __name__ == '__main__':
         else:
             rospy.logwarn("Unexpected kineme call type %s"%(kineme.call_type))
 
-        rospy.loginfo('Advertising a service for kineme %s at service endpoint: %s'%(kineme.id, 'rcvm/'+kineme.name))
-        rospy.Service('rcvm/'+kineme.name, service_class, lambda req, kineme=kineme: service_cb(req, kineme))
+        service_name = 'rcvm/'+ kineme.name.replace(' ', '_')
+
+        rospy.loginfo('Advertising a service for kineme %s at service endpoint: %s'%(kineme.id, service_name))
+        rospy.Service(service_name, service_class, lambda req, kineme=kineme: service_cb(req, kineme))
 
     rate = rospy.Rate(10)
     while not rospy.is_shutdown():
