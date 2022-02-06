@@ -17,8 +17,8 @@ import rosnode
 from timeout import Timeout
 
 import xml.etree.ElementTree as ET
-from proteus.kineme import Kineme, KNode, KNodeAbsolute, KNodeDirectional
-from proteus.srv import SymbolTrigger, SymbolDirectional, SymbolTarget
+from proteus.kineme import Kineme, KNode, KNodeAbsolute, KNodePause, KNodeDepth, KNodeDirectional, KNodeQuantity
+from proteus.srv import SymbolTrigger, SymbolDirectional, SymbolTarget, SymbolQuantity
 
 rospy.init_node('aqua_rcvm_server', argv=None, anonymous=True)
 
@@ -39,6 +39,8 @@ def service_cb(req, kineme):
         return execute_directional(req, kineme)
     elif kineme.call_type == 'target':
         return execute_target(req, kineme)
+    elif kineme.call_type == 'quantity':
+        return execute_quantity(req, kineme)
     else:
         return False
 
@@ -46,8 +48,15 @@ def service_cb(req, kineme):
 def execute_trigger(req, kineme):
     rospy.loginfo('Executing trigger kineme %s'%(kineme.id))
     for knode in kineme.knodes:
-        rpc.do_relative_angle_change((knode.orientation.roll, knode.orientation.pitch, knode.orientation.yaw), rpc.current_depth, knode.position.x, knode.position.y, knode.duration.seconds, threshold=rcvm_params['angle_diff_threshold'], timeout=knode.duration.seconds)
-
+        if type(knode) == KNodeAbsolute:
+            rpc.do_relative_angle_change((knode.orientation.roll, knode.orientation.pitch, knode.orientation.yaw), rpc.current_depth, knode.velocity.surge, knode.velocity.heave, knode.duration.seconds, threshold=rcvm_params['angle_diff_threshold'], timeout=knode.duration.seconds)
+        elif type(knode) == KNodeDepth:
+            if knode.depth.mode == 'relative':
+                rpc.do_relative_depth_change(knode.depth.amount, knode.velocity.surge, knode.velocity.heave)
+        elif type(knode) == KNodePause:
+            sleep(knode.duration.seconds)
+        else:
+            return False
     return True
     
 # Executes kinemes which are directional called, meaning that there's directional information in the service call.
@@ -61,7 +70,12 @@ def execute_directional(req, kineme):
         if type(knode) == KNodeAbsolute:
             rpc.do_relative_angle_change((knode.orientation.roll, knode.orientation.pitch, knode.orientation.yaw), rpc.current_depth, knode.position.x, knode.position.y, knode.duration.seconds, threshold=rcvm_params['angle_diff_threshold'], timeout=knode.duration.seconds)
         elif type(knode) == KNodeDirectional:
-            rpc.goto_target_orientation((rpc.RAD2DEG(orr[0]), rpc.RAD2DEG(orr[1]), rpc.RAD2DEG(orr[2])), rpc.current_depth, 0, 0, threshold=rcvm_params['angle_diff_threshold'], timeout=knode.duration.seconds)
+            rpc.do_relative_angle_change((rpc.RAD2DEG(orr[0]), rpc.RAD2DEG(orr[1]), rpc.RAD2DEG(orr[2])), rpc.current_depth, 0, 0, knode.duration.seconds, threshold=rcvm_params['angle_diff_threshold'], timeout=knode.duration.seconds)
+        elif type(knode) == KNodeDepth:
+            if knode.depth.mode == 'relative':
+                rpc.do_relative_depth_change(knode.depth.amount, knode.velocity.surge, knode.velocity.heave)
+        elif type(knode) == KNodePause:
+            sleep(knode.duration.seconds)
             
     return True
 
@@ -69,6 +83,23 @@ def execute_directional(req, kineme):
 def execute_target(req, kineme):
     return False
 
+def execute_quantity(req, kineme):
+    for knode in kineme.knodes:
+        if type(knode) == KNodeAbsolute:
+            rpc.do_relative_angle_change((knode.orientation.roll, knode.orientation.pitch, knode.orientation.yaw), rpc.current_depth, knode.velocity.surge, knode.velocity.heave, knode.duration.seconds, threshold=rcvm_params['angle_diff_threshold'], timeout=knode.duration.seconds)
+        elif type(knode) == KNodeDepth:
+            if knode.depth.mode == 'relative':
+                rpc.do_relative_depth_change(knode.depth.amount, knode.velocity.surge, knode.velocity.heave)
+        elif type(knode) == KNodePause:
+            sleep(knode.duration.seconds)
+        elif type(knode) == KNodeQuantity:
+            if knode.quantity.display_on == 'heave':
+                quant = req.quantity
+                depth_change = knode.quantity.amount * req.quantity
+                rpc.do_relative_depth_change(depth_change, 0, 0.3)
+        else:
+            return False
+    return True
 
 if __name__ == '__main__':
     rospy.loginfo('Initializing the Aqua8 RCVM server')
@@ -131,6 +162,8 @@ if __name__ == '__main__':
             service_class = SymbolDirectional
         elif kineme.call_type == 'target':
             service_class = SymbolTarget
+        elif kineme.call_type == 'quantity':
+            service_class = SymbolQuantity
         else:
             rospy.logwarn("Unexpected kineme call type %s"%(kineme.call_type))
 
