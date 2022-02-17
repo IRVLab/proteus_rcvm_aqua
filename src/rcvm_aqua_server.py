@@ -152,7 +152,8 @@ if __name__ == '__main__':
                 k.set_call_type(symbols.get(s).get('call_type'))
                 break
 
-    print(kinemes)
+    # print(kinemes)
+    
     # Setup service calls
     for key, kineme in kinemes.items():
         service_class = None
